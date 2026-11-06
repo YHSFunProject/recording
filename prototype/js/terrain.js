@@ -137,13 +137,30 @@ export function buildTerrain(nations, alive = () => true) {
   }
 
   // nations → hex owners
+  // 实控区域：优先用 terr 轮廓（对照参考图描出），没有轮廓的国家退回椭圆 own。
+  // 多个轮廓重叠时：存续期内的「已消亡国家」优先（如高卢），其余取面积更小、更具体的那个。
+  const inPoly = (x, y, P) => {
+    let c = false;
+    for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+      const [ax, ay] = P[i], [bx, by] = P[j];
+      if ((ay > y) !== (by > y) && x < (bx - ax) * (y - ay) / (by - ay) + ax) c = !c;
+    }
+    return c;
+  };
+  const polyArea = (P) => Math.abs(P.reduce((s, [x, y], i) => { const [nx, ny] = P[(i + 1) % P.length]; return s + x * ny - nx * y; }, 0)) / 2;
+  const areas = nations.map((n) => (n.terr ? polyArea(n.terr) : n.own ? Math.PI * n.own[2] * n.own[3] : Infinity));
   const nationAt = (x, y) => {
-    const px = x + fbm(x / 140, y / 140, 3) * 30, py = y + fbm(x / 140 + 50, y / 140, 3) * 30;
-    let best = -1, bd = 1;
+    // 轻微扰动，让轮廓直线落到六边形网格上时不那么规整
+    const px = x + fbm(x / 60, y / 60, 2) * 9, py = y + fbm(x / 60 + 50, y / 60, 2) * 9;
+    let best = -1, key = Infinity;
     nations.forEach((n, i) => {
-      if (!n.own || !alive(n)) return;
-      const [cx, cy, rx, ry] = n.own, dx = (px - cx) / rx, dy = (py - cy) / ry, d = Math.hypot(dx, dy);
-      if (d < bd) { bd = d; best = i; }
+      if (!alive(n)) return;
+      let inside;
+      if (n.terr) inside = inPoly(px, py, n.terr);
+      else if (n.own) { const [cx, cy, rx, ry] = n.own; inside = Math.hypot((px - cx) / rx, (py - cy) / ry) < 1; }
+      if (!inside) return;
+      const k = (n.life?.[1] != null ? 0 : 1e9) + areas[i];
+      if (k < key) { key = k; best = i; }
     });
     return best;
   };
