@@ -279,3 +279,16 @@ i { font-style: normal; }
 .src-tag { display: inline-block; margin: 4px 0 2px; padding: 1px 6px; border: 1px solid #1b1a17; font: 11px var(--sans); color: #3a3833; background: #f3f1ea; }
 .pp-lead .src-tag { margin-top: 8px; }
 .pp-item .src-tag { font-size: 10px; margin: 2px 0 4px; }
+
+/* 时间轴：紧凑卡片（四车道）与迷你事件悬停标签 */
+.tl-ev .card { padding: 2px 7px 2px; line-height: 1.25; }
+.tl-ev .card b { font-size: 11px; }
+.tl-ev .card em { font-size: 8.5px; }
+.tl-era.on.zoomed { cursor: zoom-out; }
+.tl-era.on.zoomed:hover { background: var(--accent); }
+.tl-ev.mini { z-index: 1; }
+.tl-ev.mini::after { content: attr(data-label); position: absolute; left: 0; bottom: 14px; transform: translateX(-50%); white-space: nowrap; background: var(--ink); color: #fff; font: 11px var(--sans); padding: 2px 7px; pointer-events: none; opacity: 0; transition: opacity .12s; }
+.tl-ev.mini:hover { z-index: 5; }
+.tl-ev.mini:hover::after { opacity: 1; }
+.chapter .no .ck { display: inline-block; font: 600 9px var(--mono); padding: 0 5px; margin-right: 6px; border: 1px solid var(--ink); }
+.chapter.main .no .ck { background: var(--ink); color: #fff; }

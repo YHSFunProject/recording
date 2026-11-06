@@ -323,12 +323,32 @@ export const EVENTS = [
 
 EVENTS.sort((a, b) => a.t - b.t);
 
-// 剧情：章节 → 关联事件（占位结构，用于验证「剧情」入口如何挂到地图上）
+// 剧情：章节 → 关联事件。kind: main 主线 / side 支线（活动剧情）。章节名依据 PRTS「剧情一览」。
+// 「剧情」页按各章关联事件的最早年份排序，即按泰拉历的发生顺序而不是游戏更新顺序。
 export const STORY = [
-  { id: 'ch0', no: '00–03', zh: '黑暗时代', en: 'EVIL TIME', ev: ['e-chernobog'] },
-  { id: 'ch1', no: '04–08', zh: '龙门篇', en: 'LUNGMEN', ev: ['e-lungmen'] },
-  { id: 'ch2', no: 'SIDE', zh: '深海篇', en: 'UNDER TIDES', ev: ['e-iberia'] },
-  { id: 'ch3', no: '12–14', zh: '维多利亚篇', en: 'VICTORIA', ev: ['e-londinium'] },
+  { id: 'ch0', kind: 'main', no: '00–01', zh: '黑暗时代', en: 'MAIN · EPISODE 00–01', ev: ['e-chernobog'] },
+  { id: 'ch1', kind: 'main', no: '02–08', zh: '异卵同生 → 怒号光明', en: 'MAIN · EPISODE 02–08', ev: ['e-lungmen'] },
+  { id: 'ch9', kind: 'main', no: '09', zh: '风暴瞭望', en: 'MAIN · EPISODE 09', ev: ['e-hillock'] },
+  { id: 'ch3', kind: 'main', no: '10–14', zh: '破碎日冕 → 慈悲灯塔', en: 'MAIN · EPISODE 10–14', ev: ['e-londinium', 'e-tara-indep'] },
+  { id: 'ch15', kind: 'main', no: '15', zh: '离解复合', en: 'MAIN · EPISODE 15', ev: ['e-priestess'] },
+  { id: 'ch16', kind: 'main', no: '16', zh: '反常光谱', en: 'MAIN · EPISODE 16', ev: ['e-kolossal'] },
+  { id: 'ch17', kind: 'main', no: '17', zh: '相变临界', en: 'MAIN · EPISODE 17', ev: ['e-ursus-duma', 'e-ursus-end'] },
+  { id: 'ss-babel', kind: 'side', no: 'SS', zh: '巴别塔', en: 'SIDE STORY', ev: ['e-babel'] },
+  { id: 'ss-of', kind: 'side', no: 'SS', zh: '火蓝之心', en: 'SIDE STORY', ev: ['e-siesta'] },
+  { id: 'ss-nl', kind: 'side', no: 'SS', zh: '长夜临光', en: 'SIDE STORY', ev: ['e-kazimierz'] },
+  { id: 'ss-bi', kind: 'side', no: 'SS', zh: '风雪过境', en: 'SIDE STORY', ev: ['e-kjerag-1097'] },
+  { id: 'ch2', kind: 'side', no: 'SS', zh: '覆潮之下', en: 'SIDE STORY', ev: ['e-iberia'] },
+  { id: 'ss-go', kind: 'side', no: 'SS', zh: '追迹日落以西', en: 'SIDE STORY', ev: ['e-tara-indep'] },
+  { id: 'ss-sl', kind: 'side', no: 'SS', zh: '火山旅梦', en: 'SIDE STORY', ev: ['e-siesta-volcano'] },
+  { id: 'ss-is', kind: 'side', no: 'SS', zh: '叙拉古人', en: 'SIDE STORY', ev: ['e-siracusa'] },
+  { id: 'ss-cw', kind: 'side', no: 'SS', zh: '孤星', en: 'SIDE STORY', ev: ['e-trimount-arc'] },
+  { id: 'ss-sn', kind: 'side', no: 'SS', zh: '愚人号', en: 'SIDE STORY', ev: ['e-gran-faro'] },
+  { id: 'ss-zt', kind: 'side', no: 'SS', zh: '崔林特尔梅之金', en: 'SIDE STORY', ev: ['e-witch-tower'] },
+  { id: 'ss-yw', kind: 'side', no: 'SS', zh: '昨日海', en: 'SIDE STORY', ev: ['e-real-iberia'] },
+  { id: 'ss-mt', kind: 'side', no: 'SS', zh: '众生行记', en: 'SIDE STORY', ev: ['e-lateran-calamity'] },
+  { id: 'ss-os', kind: 'side', no: 'SS', zh: '雪山降临1101', en: 'SIDE STORY', ev: ['e-kjerag-cat'] },
+  { id: 'ss-pa', kind: 'side', no: 'SS', zh: '人们，我们', en: 'SIDE STORY', ev: ['e-katorga'] },
+  { id: 'ss-sui', kind: 'side', no: 'SS', zh: '相见欢 · 辞岁行', en: 'SIDE STORY', ev: ['e-sui'] },
 ];
 
 export const GLOSSARY = [

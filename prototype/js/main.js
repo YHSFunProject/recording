@@ -259,6 +259,12 @@ function select(type, id, opts = {}) {
     if (t < tlRange[0] || t > tlRange[1]) zoomEra(tlEra ? eraOf(t).id : null);
     setYear(t, { quiet: true });
   }
+  // 选中剧情章节：时间跳到该章最晚的关联事件，让地图呈现故事发生时的局势
+  if (type === 'chapter') {
+    const t = Math.max(...CH[id].ev.map((e) => EVT[e].t));
+    if (t < tlRange[0] || t > tlRange[1]) zoomEra(tlEra ? eraOf(t).id : null);
+    setYear(t, { quiet: true });
+  }
   if (type === 'nation' && !aliveAt(NAT[id])) {
     const [a, b] = NAT[id].life;
     setYear(b != null && state.year >= b ? b - 0.5 : a + 0.1, { quiet: true });
@@ -355,7 +361,7 @@ function renderPanel() {
     const ch = CH[sel.id];
     h = `<div class="crumb"><span>ARCHIVE / STORY / ${ch.no}</span>${back('返回剧情')}</div><div class="ph-head"><div class="emb">${ch.no.slice(0, 2)}</div><div><h1>${ch.zh}</h1><div class="ph-en">${ch.en}</div></div></div>
       <p class="sum">剧情章节作为「阅读路径」：按章节顺序串联事件与地点，点击事件即在地图与时间轴上定位。</p>
-      <h3><span>章节事件 EVENTS</span></h3><ul class="list">${ch.ev.map((id) => evItem(EVT[id])).join('')}</ul>`;
+      <h3><span>章节事件 EVENTS</span></h3><ul class="list">${[...ch.ev].sort((x, y) => EVT[x].t - EVT[y].t).map((id) => evItem(EVT[id])).join('')}</ul>`;
   }
   panel.innerHTML = h + `<div class="note">低保真原型 · 文案与年份为占位，需按官方设定核对。<br>海岸线提取自行政概略图；山脉、河流与国界为近似。</div>`;
   panel.scrollTop = 0;
@@ -381,8 +387,15 @@ function renderTab() {
     <ul class="list">${NATIONS.map((n) => `<li data-paper="${n.id}"><span class="k">▤</span><b>${n.zh}史料</b><em>${eventsOf(n.id).length} 条${aliveAt(n) ? '' : n.life?.[1] != null && state.year >= n.life[1] ? ' · 已终止' : ' · 尚未建立'}</em></li>`).join('')}</ul>`;
   if (t === 'cities') return `<div class="crumb"><span>ARCHIVE / CITIES</span></div><h1>城市</h1><div class="ph-en">CITIES & SITES</div><h3><span>全部</span><span>${CITIES.length}</span></h3><ul class="list">${CITIES.map(cityItem).join('')}</ul>`;
   if (t === 'events') return `<div class="crumb"><span>ARCHIVE / HISTORY</span></div><h1>历史</h1><div class="ph-en">CHRONICLE</div><h3><span>按时间</span><span>${EVENTS.length}</span></h3><ul class="list">${EVENTS.map(evItem).join('')}</ul>`;
-  if (t === 'story') return `<div class="crumb"><span>ARCHIVE / STORY</span></div><h1>剧情</h1><div class="ph-en">STORY ROUTES</div><h3><span>章节</span><span>${STORY.length}</span></h3>
-    ${STORY.map((c) => `<div class="chapter" data-sel="chapter:${c.id}"><div class="no">${c.no} · ${c.en}</div><b>${c.zh}</b><div class="mono" style="font-size:10px;color:var(--ink3)">${c.ev.map((e) => EVT[e].zh).join(' → ')}</div></div>`).join('')}`;
+  if (t === 'story') {
+    // 按泰拉历排序：取每章关联事件中最早的年份
+    const first = (c) => Math.min(...c.ev.map((e) => EVT[e].t));
+    const list = [...STORY].sort((a, b) => first(a) - first(b));
+    return `<div class="crumb"><span>ARCHIVE / STORY</span></div><h1>剧情</h1><div class="ph-en">STORY ROUTES</div>
+    <p class="sum">按故事在泰拉历中发生的时间排列，不是游戏的更新顺序。点击章节，地图与时间轴会定位到相关事件。</p>
+    <h3><span>按时间 · 主线 ${STORY.filter((c) => c.kind === 'main').length} / 支线 ${STORY.filter((c) => c.kind === 'side').length}</span><span>${STORY.length}</span></h3>
+    ${list.map((c) => `<div class="chapter ${c.kind}" data-sel="chapter:${c.id}"><div class="no"><span class="ck">${c.kind === 'main' ? '主线 ' + c.no : '支线'}</span>${EVT[c.ev[0]].yr}${EVT[c.ev[0]].tbd ? '*' : ''}</div><b>${c.zh}</b><div class="mono" style="font-size:10px;color:var(--ink3)">${c.ev.map((e) => EVT[e].zh).join(' → ')}</div></div>`).join('')}`;
+  }
   if (t === 'glossary') return `<div class="crumb"><span>ARCHIVE / GLOSSARY</span></div><h1>词条</h1><div class="ph-en">GLOSSARY</div><h3><span>世界观</span><span>${GLOSSARY.length}</span></h3>
     <ul class="list">${GLOSSARY.map((g) => `<li data-sel="term:${g.id}"><span class="k">◇</span><b>${g.zh}</b><em>${g.en}</em></li>`).join('')}</ul>`;
   return `<div class="crumb"><span>ARCHIVE / OVERVIEW</span><span>PRTS</span></div><h1>泰拉</h1><div class="ph-en">TERRA · CONTINENT ARCHIVE</div>
@@ -428,21 +441,23 @@ function overviewYear(f) {
 }
 let tlX = (y) => 0, tlYear = (x) => Y0, tlAxisY = 0, tlRange = [Y0, Y1];
 const niceStep = (span) => { const raw = span / 8, p = 10 ** Math.floor(Math.log10(raw)); return [1, 2, 5, 10].map((k) => k * p).find((s) => s >= raw); };
+let tlZoom = null; // 时代视图内用滚轮放大后的范围 [a, b]；null = 整个时代
 function buildTimeline() {
   const W = tlTrack.clientWidth, H = tlTrack.clientHeight, axisY = H - 52, padL = 30, a = W - padL - 60;
   tlAxisY = axisY;
   const era = ERAS.find((e) => e.id === tlEra);
-  tlRange = era ? [era.a, era.b] : [Y0, Y1];
-  const frac = era ? (y) => (y - era.a) / (era.b - era.a) : overviewFrac;
-  const unfrac = era ? (f) => era.a + f * (era.b - era.a) : overviewYear;
+  const [va, vb] = era ? tlZoom || [era.a, era.b] : [Y0, Y1];
+  tlRange = [va, vb];
+  const frac = era ? (y) => (y - va) / (vb - va) : overviewFrac;
+  const unfrac = era ? (f) => va + f * (vb - va) : overviewYear;
   const X = (y) => padL + Math.max(0, Math.min(1, frac(y))) * a;
   tlX = X;
   tlYear = (x) => unfrac(Math.max(0, Math.min(1, (x - padL) / a)));
-  const inView = (t) => t >= tlRange[0] && t <= tlRange[1];
+  const inView = (t) => t >= va && t <= vb;
   const evs = EVENTS.filter((e) => inView(e.t));
   $('#tl-bg').innerHTML = skylineSVG(W, axisY, evs.filter((e) => e.major || era).map((e) => ({ x: X(e.t), type: e.mark })));
 
-  // 刻度
+  // 刻度：跨度小于 12 年时按年标注并画季度小刻度
   let ax = `<line x1="0" y1="${axisY}" x2="${W}" y2="${axisY}" stroke="#1d1d1b"/>`;
   const tick = (y, label, major = true) => {
     const x = X(y);
@@ -450,45 +465,66 @@ function buildTimeline() {
     if (label) ax += `<text x="${x + 3}" y="${axisY + 19}">${label}</text>`;
   };
   if (era) {
-    const st = niceStep(era.b - era.a);
-    for (let y = Math.ceil(era.a / st) * st; y <= era.b; y += st) tick(y, fmtYr(y));
-    if (era.b - era.a < 30) for (let y = Math.ceil(era.a); y < era.b; y++) for (let q = 1; q < 4; q++) tick(y + q / 4, '', false);
+    const span = vb - va;
+    const st = Math.max(1, niceStep(span));
+    for (let y = Math.ceil(va / st) * st; y <= vb; y += st) tick(y, fmtYr(y));
+    if (span <= 12) for (let y = Math.floor(va); y < vb; y++) for (let q = 1; q < 4; q++) if (y + q / 4 > va && y + q / 4 < vb) tick(y + q / 4, '', false);
   } else {
     for (const e of ERAS) tick(e.a, fmtYr(e.a));
     for (let y = 1095; y <= 1103; y++) tick(y, y % 2 === 1 ? String(y) : '', y % 2 === 1);
   }
-  ax += `<text x="${padL}" y="${axisY + 44}" style="fill:#8d8a83;font-size:9px">${era ? `${era.zh} · 线性比例 · 共 ${evs.length} 个事件` : '总览：越早的时代压缩越多，点击上方时代条放大'}</text>`;
+  ax += `<text x="${padL}" y="${axisY + 44}" style="fill:#8d8a83;font-size:9px">${era ? `${fmtYr(va)} — ${fmtYr(vb)} · 显示 ${evs.length} 个事件 · 滚轮缩放 · Shift + 滚轮平移` : '总览：越早的时代压缩越多 · 点击时代条或在时间轴上滚动滚轮放大'}</text>`;
   $('#tl-axis').innerHTML = ax;
 
-  // 时代条（顶部，可点击放大 / 返回总览）
+  // 时代条（顶部）：总览时点击进入某个时代；时代内点击时代条恢复显示整个时代
   let bands = '';
-  if (era) bands = `<button class="tl-era back" data-era="" style="left:${padL}px">← 全部时代</button><div class="tl-era on" style="left:${padL + 92}px;right:60px"><b>${era.zh}</b><i>${era.en}</i><span>${fmtYr(era.a)} — ${fmtYr(era.b)}</span></div>`;
+  if (era) bands = `<button class="tl-era back" data-era="" style="left:${padL}px">← 全部时代</button><button class="tl-era on${tlZoom ? ' zoomed' : ''}" data-era="${era.id}" style="left:${padL + 92}px;right:60px" title="${tlZoom ? '点击显示整个时代' : ''}"><b>${era.zh}</b><i>${era.en}</i><span>${tlZoom ? `已放大 ${fmtYr(va)} — ${fmtYr(vb)} · 点此显示整个时代` : `${fmtYr(era.a)} — ${fmtYr(era.b)}`}</span></button>`;
   else bands = ERAS.map((e) => `<button class="tl-era" data-era="${e.id}" style="left:${X(e.a)}px;width:${X(e.b) - X(e.a) - 2}px" title="${e.zh} ${fmtYr(e.a)} — ${fmtYr(e.b)}"><b>${e.zh}</b><i>${e.en}</i></button>`).join('');
 
-  // 事件卡片：按车道排布，放不下的只显示菱形点（悬停看名称）
-  const lanesY = [30, 68, 106], laneEnd = [-1e9, -1e9, -1e9], CARD = 150;
+  // 事件卡片：四条车道；放不下的只显示菱形点，悬停显示名称
+  const lanesY = [30, 61, 92, 123], CARD = 146;
   const order = [...evs].sort((p, q) => (era ? 0 : (q.major ? 1 : 0) - (p.major ? 1 : 0)) || p.t - q.t);
-  const placed = new Map();
+  const placed = lanesY.map(() => []);
   for (const e of order) {
     const x = X(e.t);
-    // 卡片朝右展开；靠近右端时朝左
-    const flip = x + CARD > W - 10;
+    const flip = x + CARD > W - 10; // 靠近右端时卡片朝左
     const x0 = flip ? x - CARD : x, x1 = flip ? x : x + CARD;
-    let lane = -1;
-    for (let i = 0; i < 3; i++) if (!(placed.get(i) || []).some(([l, r]) => x0 < r + 6 && x1 > l - 6)) { lane = i; break; }
-    if (lane >= 0) { placed.set(lane, [...(placed.get(lane) || []), [x0, x1]]); e._lane = lane; e._flip = flip; } else e._lane = -1;
+    const lane = placed.findIndex((L) => !L.some(([l, r]) => x0 < r + 6 && x1 > l - 6));
+    e._lane = lane; e._flip = flip;
+    if (lane >= 0) placed[lane].push([x0, x1]);
   }
   $('#tl-nodes').innerHTML = bands + evs.map((e) => {
     const x = X(e.t), lane = e._lane;
-    if (lane < 0) return `<div class="tl-ev mini" data-id="${e.id}" style="left:${x}px;top:${axisY - 5}px" title="${e.yr} ${e.zh}"><div class="dot" style="top:0"></div></div>`;
+    if (lane < 0) return `<div class="tl-ev mini" data-id="${e.id}" data-label="${e.yr}${e.tbd ? '*' : ''} ${e.zh}" style="left:${x}px;top:${axisY - 5}px"><div class="dot" style="top:0"></div></div>`;
     const top = lanesY[lane];
     return `<div class="tl-ev${e._flip ? ' flip' : ''}" data-id="${e.id}" style="left:${x}px;top:${top}px"><div class="card"><span class="yr">${e.yr}${e.tbd ? '*' : ''}</span><b>${e.zh}</b><em>${nameOf(e.loc)}${NAT[natOf(e)] && natOf(e) !== e.loc ? ' · ' + NAT[natOf(e)].en : ''}</em></div>
-      <div class="stem" style="top:38px;height:${axisY - top - 38}px"></div><div class="dot" style="top:${axisY - top - 5}px"></div></div>`;
+      <div class="stem" style="top:30px;height:${axisY - top - 30}px"></div><div class="dot" style="top:${axisY - top - 5}px"></div></div>`;
   }).join('') + `<div id="tl-cursor"><i></i><b></b></div>`;
-  $('#tl-range').textContent = era ? `${era.zh} · ${fmtYr(era.a)} — ${fmtYr(era.b)}` : '全部时代';
+  $('#tl-range').textContent = era ? `${era.zh} · ${fmtYr(va)} — ${fmtYr(vb)}` : '全部时代';
   markTimeline();
 }
-function zoomEra(id) { tlEra = id || null; buildTimeline(); }
+function zoomEra(id) { tlEra = id || null; tlZoom = null; buildTimeline(); }
+// 滚轮：总览中滚动 = 进入鼠标所在的时代；时代内滚动 = 以鼠标为中心缩放；Shift + 滚轮或横向滚动 = 平移
+let wheelQueued = false;
+tlTrack.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const x = e.clientX - tlTrack.getBoundingClientRect().left;
+  if (!tlEra) { if (e.deltaY < 0) zoomEra(eraOf(tlYear(x)).id); return; }
+  const era = ERAS.find((v) => v.id === tlEra), full = era.b - era.a;
+  let [a, b] = tlRange, span = b - a;
+  const horiz = e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY);
+  if (horiz) {
+    const d = (e.shiftKey ? e.deltaY : e.deltaX) * span * 0.0015;
+    a += d; b += d;
+  } else {
+    const yAt = tlYear(x), ns = Math.min(full, Math.max(Math.max(1, full / 2000), span * Math.exp(e.deltaY * 0.0015)));
+    a = yAt - (yAt - a) * ns / span; b = a + ns; span = ns;
+  }
+  if (a < era.a) { b += era.a - a; a = era.a; }
+  if (b > era.b) { a -= b - era.b; b = era.b; }
+  tlZoom = b - a >= full * 0.999 ? null : [Math.max(era.a, a), b];
+  if (!wheelQueued) { wheelQueued = true; requestAnimationFrame(() => { wheelQueued = false; buildTimeline(); }); }
+}, { passive: false });
 function placeCursor() {
   const c = $('#tl-cursor'); if (!c) return;
   const vis = state.year >= tlRange[0] && state.year <= tlRange[1];
