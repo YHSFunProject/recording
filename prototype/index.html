@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>泰拉纪事馆 · TERRA ARCHIVE</title>
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three/three.module.js",
+  "three/addons/": "./vendor/three/addons/"
+} }
+</script>
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <div class="brand">
+      <span class="mark"></span>
+      <b>泰拉纪事馆</b><span class="en">TERRA ARCHIVE</span>
+      <span class="ver">LO-FI PROTOTYPE · v0.1</span>
+    </div>
+    <nav id="nav">
+      <button data-tab="map" class="on">总览<i>OVERVIEW</i></button>
+      <button data-tab="nations">国家<i>NATIONS</i></button>
+      <button data-tab="cities">城市<i>CITIES</i></button>
+      <button data-tab="events">历史<i>HISTORY</i></button>
+      <button data-tab="story">剧情<i>STORY</i></button>
+      <button data-tab="gazette">史料<i>RECORDS</i></button>
+      <button data-tab="glossary">词条<i>GLOSSARY</i></button>
+    </nav>
+    <div class="sys">PRTS · TERRA CARTOGRAPHY <span id="clock"></span></div>
+  </header>
+
+  <main id="map">
+    <div id="gl"></div>
+    <div id="labels"></div>
+    <div id="frags"></div>
+
+    <div id="hud-tl" class="hud">
+      <div class="seg" id="view-seg">
+        <button data-view="tilt" class="on">倾斜 <i>TILT</i></button>
+        <button data-view="top">俯视 <i>TOP</i></button>
+        <button data-view="reset" title="复位">⟲</button>
+      </div>
+      <div id="era-style" class="era-style mono">地图样式 · 当代</div>
+      <div class="chips" id="layers">
+        <button data-layer="contour" class="on">等高线</button>
+        <button data-layer="hex" class="on">地块</button>
+        <button data-layer="river" class="on">河流</button>
+        <button data-layer="grid" class="on">经纬网</button>
+        <button data-layer="collage" class="on">拼贴</button>
+      </div>
+    </div>
+
+    <div id="hud-bl" class="hud mono">
+      <div class="scale"><span id="scale-bar"></span><b id="scale-txt">500 km</b></div>
+      <div id="coord">N 00.0° · E 000.0°</div>
+      <div class="hint">左键拖动旋转 · 右键拖动平移 · 滚轮缩放 · ESC 复位</div>
+    </div>
+
+    <div id="hud-br" class="hud">
+      <div id="compass"><span>N</span><i></i></div>
+      <ul class="legend mono">
+        <li><i class="lg-coast"></i>海岸线</li>
+        <li><i class="lg-border"></i>国界（实控地块）</li>
+        <li><i class="lg-dash"></i>实控边缘</li>
+        <li><i class="lg-contour"></i>等高线</li>
+        <li><i class="lg-river"></i>河流</li>
+        <li><i class="lg-cap"></i>首都 / <i class="lg-city"></i>城市</li>
+      </ul>
+    </div>
+
+    <div id="tip"></div>
+    <div id="loading"><div><b>PRTS</b> 正在载入测绘数据 …</div></div>
+  </main>
+
+  <aside id="panel"></aside>
+
+  <section id="timeline">
+    <div id="tl-head">
+      <div class="no mono">04 / CHRONICLE</div>
+      <h2>历史图景</h2>
+      <div class="en">HISTORICAL PANORAMA</div>
+      <div class="range mono">当前年份 <b id="tl-year">1103</b> · <span id="tl-range">全部时代</span></div>
+      <p>点击时代条放大，拖动底部黄色游标改变年份，地图国界随之变化。标 * 者待考证。</p>
+    </div>
+    <div id="tl-track">
+      <div id="tl-bg"></div>
+      <svg id="tl-axis"></svg>
+      <div id="tl-nodes"></div>
+    </div>
+  </section>
+
+  <svg id="overlay"></svg>
+  <section id="paper" hidden></section>
+</div>
+<script type="module" src="js/main.js?v=2"></script>
+</body>
+</html>

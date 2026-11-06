@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+
+# 其他工具的本地配置
+.openai/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 参考素材（版权属于原作者，只留在本地，不进仓库）
+reference/
+endfield-map-reference.png
+terra-relief-study.obj
