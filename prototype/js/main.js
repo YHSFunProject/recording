@@ -37,7 +37,7 @@ const TERM = Object.fromEntries(GLOSSARY.map((g) => [g.id, g]));
 const CH = Object.fromEntries(STORY.map((c) => [c.id, c]));
 const thing = (id) => CITY[id] || NAT[id] || REG[id];
 const posOf = (id) => thing(id)?.at;
-const nameOf = (id) => thing(id)?.zh ?? id;
+const nameOf = (id) => (id == null ? '地点不详' : thing(id)?.zh ?? id);
 
 await new Promise((r) => setTimeout(r, 30)); // 让 loading 先绘制
 await loadLand('data/land.png');
@@ -285,9 +285,9 @@ function flyToSel() {
   if (sel.type === 'nation') { pts = [NAT[sel.id].at]; dist = 30; }
   else if (sel.type === 'city') { pts = [CITY[sel.id].at]; dist = 17; }
   else if (sel.type === 'region') { pts = [REG[sel.id].at]; dist = 32; }
-  else if (sel.type === 'event') { const e = EVT[sel.id]; pts = [e.loc, ...e.rel].map(posOf); dist = 20; }
+  else if (sel.type === 'event') { const e = EVT[sel.id]; pts = [e.loc, ...e.rel].map(posOf).filter(Boolean); dist = 20; }
   else if (sel.type === 'term') { pts = TERM[sel.id].rel.map(posOf).filter(Boolean); dist = 30; }
-  else if (sel.type === 'chapter') { pts = CH[sel.id].ev.map((e) => posOf(EVT[e].loc)); dist = 24; }
+  else if (sel.type === 'chapter') { pts = CH[sel.id].ev.map((e) => posOf(EVT[e].loc)).filter(Boolean); dist = 24; }
   if (!pts.length) return;
   const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
   const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
@@ -300,6 +300,8 @@ function flyToSel() {
 // ---------- panel
 const esc = (s) => String(s);
 const tbd = (x) => (x?.tbd ? '<span class="tbd">待考证</span>' : '');
+// 地点链接：按城市 / 国家 / 区域区分，地点不详时只显示文字
+const placeLink = (id) => (CITY[id] ? `<a data-sel="city:${id}">${nameOf(id)}</a>` : NAT[id] ? `<a data-sel="nation:${id}">${nameOf(id)}</a>` : REG[id] ? `<a data-sel="region:${id}">${nameOf(id)}</a>` : nameOf(id));
 const evItem = (e) => `<li data-sel="event:${e.id}"><span class="yr">${e.yr}${e.tbd ? '*' : ''}</span><b>${e.zh}</b><em>${nameOf(e.loc)}</em></li>`;
 const cityItem = (c) => `<li data-sel="city:${c.id}"><span class="k">${c.cap ? '■' : c.site ? '◌' : '□'}</span><b>${c.zh}</b><em>${c.code}</em></li>`;
 const thumbs = (id) => (FRAGMENTS[id] || []).map((f, i) => `<figure>${fragSVG(f.k, i * 7 + 3 + id.length)}<figcaption>FIG.${String(i + 1).padStart(2, '0')} ${f.cap}</figcaption></figure>`).join('');
@@ -333,9 +335,9 @@ function renderPanel() {
     const e = EVT[sel.id], c = natOf(e) ? { nation: natOf(e) } : null, ch = STORY.find((s) => s.ev.includes(e.id));
     h = `<div class="crumb"><span>ARCHIVE / EVENT / ${e.yr}</span>${back()}</div>
       <div class="ph-head"><div class="emb ev">${e.yr.replace('≈', '')}</div><div><h1 style="font-size:22px">${e.zh}${tbd(e)}</h1><div class="ph-en">${e.en}</div></div></div>
-      <dl class="kv"><dt>时间</dt><dd class="mono">泰拉历 ${e.yr}</dd><dt>地点</dt><dd><a data-sel="city:${e.loc}">${nameOf(e.loc)}</a></dd>
+      <dl class="kv"><dt>时间</dt><dd class="mono">泰拉历 ${e.yr}</dd><dt>地点</dt><dd>${placeLink(e.loc)}</dd>
       <dt>所属</dt><dd>${c ? `<a data-sel="nation:${c.nation}">${NAT[c.nation].zh}</a>` : '—'}</dd>
-      <dt>关联</dt><dd>${e.rel.map((r) => `<a data-sel="${CITY[r] ? 'city' : 'nation'}:${r}">${nameOf(r)}</a>`).join(' · ') || '—'}</dd>
+      <dt>关联</dt><dd>${e.rel.map(placeLink).join(' · ') || '—'}</dd>
       ${ch ? `<dt>剧情</dt><dd><a data-sel="chapter:${ch.id}">${ch.no} ${ch.zh}</a></dd>` : ''}</dl>
       <p class="sum">${e.sum}</p>
       ${c ? `<button class="cta" data-paper="${c.nation}" data-ev="${e.id}">阅读完整记录与材料<i>《${srcOf(e)}》→</i></button>` : ''}
@@ -564,7 +566,7 @@ function renderPaper() {
   const others = shown.filter((e) => e !== lead).reverse();
   const elsewhere = lead ? EVENTS.filter((e) => !all.includes(e) && Math.abs(e.t - lead.t) <= 1.2 && e.t <= state.year + 1e-6)
     .sort((a, b) => Math.abs(a.t - lead.t) - Math.abs(b.t - lead.t)).slice(0, 4) : [];
-  const places = lead ? [lead.loc, ...lead.rel] : [];
+  const places = lead ? [lead.loc, ...lead.rel].filter((x) => x != null) : [];
   paperEl.innerHTML = `
   <div class="pp-bar"><button data-pp-close>← 返回地图</button><span class="mono">RECORDS / ${n.code} / ${Y}</span>
     <label>换一个国家 <select data-pp-switch>${NATIONS.map((m) => `<option value="${m.id}"${m.id === nat ? ' selected' : ''}>${m.zh}史料${aliveAt(m) ? '' : '（已不存在）'}</option>`).join('')}</select></label>
@@ -590,7 +592,7 @@ function renderPaper() {
         <h4>相关材料 MATERIALS <span>${mats.length}</span></h4>
         <div class="pp-mats">${mats.map((m, i) => `<figure>${fragSVG(m.k, i * 13 + lead.id.length)}<figcaption>材料 ${String(i + 1).padStart(2, '0')} · ${m.cap}</figcaption></figure>`).join('') || '<p class="muted">暂无材料，待补充。</p>'}</div>
         <h4>相关地点 PLACES</h4>
-        <div class="pp-tags">${places.map((id) => `<a data-pp-sel="${CITY[id] ? 'city' : 'nation'}:${id}">${nameOf(id)}</a>`).join('')}</div>
+        <div class="pp-tags">${places.map((id) => `<a data-pp-sel="${CITY[id] ? 'city' : NAT[id] ? 'nation' : 'region'}:${id}">${nameOf(id)}</a>`).join('')}</div>
         <p class="muted src">资料来源：PRTS Wiki「泰拉年表」、Arknights Terra Wiki「Timeline」；标 * 的年份或译名待核对。</p>
       </div>
       <aside class="pp-side">
