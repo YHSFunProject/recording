@@ -292,3 +292,30 @@ i { font-style: normal; }
 .tl-ev.mini:hover::after { opacity: 1; }
 .chapter .no .ck { display: inline-block; font: 600 9px var(--mono); padding: 0 5px; margin-right: 6px; border: 1px solid var(--ink); }
 .chapter.main .no .ck { background: var(--ink); color: #fff; }
+
+/* ---------- 窄屏（手机）：上下排列，地图在上，档案与时间轴在下 */
+@media (max-width: 760px) {
+  html, body { height: auto; overflow: auto; }
+  #app { height: auto; grid-template-columns: 1fr; grid-template-rows: auto 64vh auto auto; }
+  #top, #timeline { grid-column: auto; }
+  #top { flex-wrap: wrap; gap: 6px 14px; padding: 8px max(16px, env(safe-area-inset-left, 0px)); }
+  #top .sys, .brand .ver { display: none; }
+  #nav { width: 100%; overflow-x: auto; scrollbar-width: none; }
+  #panel { border-left: 0; border-top: 1px solid var(--line); }
+  .legend { display: none; }
+  #hud-bl .hint { display: none; }
+  #timeline { flex-direction: column; }
+  #tl-head { width: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 10px 16px; }
+  #tl-head p { display: none; }
+  #tl-track { height: 224px; flex: none; }
+  #paper { top: 0; bottom: 0; }
+  .pp-sheet { margin: 12px 8px 24px; padding: 18px 16px 24px; }
+  .pp-mast { grid-template-columns: 1fr; gap: 8px; }
+  .pp-mast .ear { display: none; }
+  .pp-mast h1 { font-size: 34px; }
+  .pp-grid { grid-template-columns: 1fr; }
+  .pp-lead { border-right: 0; padding-right: 0; }
+  .pp-body { column-count: 1; }
+  .pp-bar { flex-wrap: wrap; gap: 8px; }
+  .pp-bar .hint { display: none; }
+}

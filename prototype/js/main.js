@@ -363,7 +363,7 @@ function renderPanel() {
       <p class="sum">剧情章节作为「阅读路径」：按章节顺序串联事件与地点，点击事件即在地图与时间轴上定位。</p>
       <h3><span>章节事件 EVENTS</span></h3><ul class="list">${[...ch.ev].sort((x, y) => EVT[x].t - EVT[y].t).map((id) => evItem(EVT[id])).join('')}</ul>`;
   }
-  panel.innerHTML = h + `<div class="note">低保真原型 · 文案与年份为占位，需按官方设定核对。<br>海岸线提取自行政概略图；山脉、河流与国界为近似。</div>`;
+  panel.innerHTML = h + `<div class="note">非官方粉丝作品，内容版权归《明日方舟》及鹰角网络所有。<br>海岸线与实控地块参考《泰拉诸国行政概略图》（terminator7211、陈谈 绘制）；山脉与河流为示意。<br>年表与剧情资料整理自 <a href="https://prts.wiki/w/%E6%B3%B0%E6%8B%89%E5%B9%B4%E8%A1%A8" target="_blank" rel="noopener">PRTS Wiki</a> 与 Arknights Terra Wiki，标 * 者待核对。</div>`;
   panel.scrollTop = 0;
 }
 function renderTab() {
